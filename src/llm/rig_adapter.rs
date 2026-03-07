@@ -34,6 +34,7 @@ pub struct RigAdapter<M: CompletionModel> {
     model_name: String,
     input_cost: Decimal,
     output_cost: Decimal,
+    use_strict_schema: bool,
 }
 
 impl<M: CompletionModel> RigAdapter<M> {
@@ -47,7 +48,14 @@ impl<M: CompletionModel> RigAdapter<M> {
             model_name: name,
             input_cost,
             output_cost,
+            use_strict_schema: false,
         }
+    }
+
+    /// Enable OpenAI strict-mode schema normalization for tools.
+    pub fn with_strict_schema(mut self, strict: bool) -> Self {
+        self.use_strict_schema = strict;
+        self
     }
 }
 
@@ -288,17 +296,17 @@ fn normalized_tool_call_id(raw: Option<&str>, seed: usize) -> String {
     }
 }
 
-/// Convert IronClaw tool definitions to rig-core format.
-///
-/// Applies OpenAI strict-mode schema normalization to ensure all tool
-/// parameter schemas comply with OpenAI's function calling requirements.
-fn convert_tools(tools: &[IronToolDefinition]) -> Vec<RigToolDefinition> {
+fn convert_tools(tools: &[IronToolDefinition], strict: bool) -> Vec<RigToolDefinition> {
     tools
         .iter()
         .map(|t| RigToolDefinition {
             name: t.name.clone(),
             description: t.description.clone(),
-            parameters: normalize_schema_strict(&t.parameters),
+            parameters: if strict {
+                normalize_schema_strict(&t.parameters)
+            } else {
+                t.parameters.clone()
+            },
         })
         .collect()
 }
@@ -468,7 +476,7 @@ where
         let mut messages = request.messages;
         crate::llm::provider::sanitize_tool_messages(&mut messages);
         let (preamble, history) = convert_messages(&messages);
-        let tools = convert_tools(&request.tools);
+        let tools = convert_tools(&request.tools, self.use_strict_schema);
         let tool_choice = convert_tool_choice(request.tool_choice.as_deref());
 
         let rig_req = build_rig_request(

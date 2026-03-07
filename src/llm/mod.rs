@@ -121,7 +121,7 @@ fn create_openai_provider(config: &LlmConfig) -> Result<Arc<dyn LlmProvider>, Ll
     .completions_api();
 
     let model = client.completion_model(&oai.model);
-    Ok(Arc::new(RigAdapter::new(model, &oai.model)))
+    Ok(Arc::new(RigAdapter::new(model, &oai.model).with_strict_schema(true)))
 }
 
 fn create_anthropic_provider(config: &LlmConfig) -> Result<Arc<dyn LlmProvider>, LlmError> {
