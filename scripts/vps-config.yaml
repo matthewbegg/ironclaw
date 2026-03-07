@@ -18,10 +18,10 @@ tools:
     capabilities: /root/.ironclaw/tools/atlas-brain-tool.capabilities.json
 
 llm:
-  # Route via LiteLLM proxy service name
-  api_base: http://litellm:4000/v1
-  api_key: sk-ironclaw-master-key
-  default_model: grok-orchestrator
+  # Use Gemini directly
+  # api_base: http://litellm:4000/v1
+  # api_key: sk-ironclaw-master-key
+  default_model: gemini-2.0-flash-exp
 
 database:
   connection_string: "postgres://ironclaw:ironclaw@host.docker.internal:5432/ironclaw"

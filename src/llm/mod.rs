@@ -60,6 +60,7 @@ pub fn create_llm_provider(
         LlmBackend::Ollama => create_ollama_provider(config),
         LlmBackend::OpenAiCompatible => create_openai_compatible_provider(config),
         LlmBackend::Tinfoil => create_tinfoil_provider(config),
+        LlmBackend::Gemini => create_gemini_provider(config),
     }
 }
 
@@ -263,6 +264,28 @@ fn create_openai_compatible_provider(config: &LlmConfig) -> Result<Arc<dyn LlmPr
         compat.model
     );
     Ok(Arc::new(RigAdapter::new(model, &compat.model)))
+}
+
+fn create_gemini_provider(config: &LlmConfig) -> Result<Arc<dyn LlmProvider>, LlmError> {
+    let gem = config.gemini.as_ref().ok_or_else(|| LlmError::AuthFailed {
+        provider: "gemini".to_string(),
+    })?;
+
+    use rig::providers::gemini;
+
+    let client = gemini::Client::new(gem.api_key.expose_secret()).map_err(|e| {
+        LlmError::RequestFailed {
+            provider: "gemini".to_string(),
+            reason: format!("Failed to create Gemini client: {}", e),
+        }
+    })?;
+    let model = client.completion_model(&gem.model);
+
+    tracing::info!(
+        "Using Gemini direct API (model: {})",
+        gem.model
+    );
+    Ok(Arc::new(RigAdapter::new(model, &gem.model)))
 }
 
 /// Create a cheap/fast LLM provider for lightweight tasks (heartbeat, routing, evaluation).

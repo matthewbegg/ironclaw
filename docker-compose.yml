@@ -14,15 +14,17 @@ services:
       - XAI_API_KEY=${XAI_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - SECRETS_MASTER_KEY=${SECRETS_MASTER_KEY}
-      - LLM_BACKEND=openai_compatible
-      - LLM_BASE_URL=http://litellm:4000/v1
-      - LLM_MODEL=grok-orchestrator
+      - LLM_BACKEND=gemini
+      - GEMINI_MODEL=gemini-2.0-flash-exp
+      # - LLM_BACKEND=openai_compatible
+      # - LLM_BASE_URL=http://litellm:4000/v1
+      # - LLM_MODEL=grok-orchestrator
     command: ["run", "--config", "/app/config.toml", "--no-onboard"]
     depends_on:
       postgres:
         condition: service_healthy
-      litellm:
-        condition: service_started
+      # litellm:
+      #   condition: service_started
       redis:
         condition: service_started
     extra_hosts:
@@ -56,20 +58,20 @@ services:
       - redisdata:/data
     restart: always
 
-  # 4. LiteLLM Proxy for Provider Routing
-  litellm:
-    image: ghcr.io/berriai/litellm:main-latest
-    ports:
-      - "4000:4000"
-    volumes:
-      - ./litellm_config.yaml:/app/config.yaml
-    environment:
-      - XAI_API_KEY=${XAI_API_KEY}
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-    command: ["--config", "/app/config.yaml", "--port", "4000"]
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    restart: always
+  # 4. LiteLLM Proxy for Provider Routing (DISABLED)
+  # litellm:
+  #   image: ghcr.io/berriai/litellm:main-latest
+  #   ports:
+  #     - "4000:4000"
+  #   volumes:
+  #     - ./litellm_config.yaml:/app/config.yaml
+  #   environment:
+  #     - XAI_API_KEY=${XAI_API_KEY}
+  #     - GEMINI_API_KEY=${GEMINI_API_KEY}
+  #   command: ["--config", "/app/config.yaml", "--port", "4000"]
+  #   extra_hosts:
+  #     - "host.docker.internal:host-gateway"
+  #   restart: always
 
 volumes:
   ironclaw_pgdata:

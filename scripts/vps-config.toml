@@ -5,9 +5,9 @@ secrets_master_key_source = "env"
 database_url = "postgres://ironclaw:ironclaw@postgres:5432/ironclaw"
 
 # Top-level inference settings (Settings struct is flat for these)
-llm_backend = "openai_compatible"
-openai_compatible_base_url = "http://litellm:4000/v1"
-selected_model = "grok-orchestrator"
+llm_backend = "gemini"
+# openai_compatible_base_url = "http://litellm:4000/v1"
+selected_model = "gemini-2.0-flash-exp"
 
 [agent]
 name = "ironclaw"

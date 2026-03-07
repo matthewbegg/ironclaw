@@ -26,6 +26,8 @@ pub enum LlmBackend {
     OpenAiCompatible,
     /// Tinfoil private inference
     Tinfoil,
+    /// Direct Google Gemini API
+    Gemini,
 }
 
 impl std::str::FromStr for LlmBackend {
@@ -39,8 +41,9 @@ impl std::str::FromStr for LlmBackend {
             "ollama" => Ok(Self::Ollama),
             "openai_compatible" | "openai-compatible" | "compatible" => Ok(Self::OpenAiCompatible),
             "tinfoil" => Ok(Self::Tinfoil),
+            "gemini" | "google" => Ok(Self::Gemini),
             _ => Err(format!(
-                "invalid LLM backend '{}', expected one of: nearai, openai, anthropic, ollama, openai_compatible, tinfoil",
+                "invalid LLM backend '{}', expected one of: nearai, openai, anthropic, ollama, openai_compatible, tinfoil, gemini",
                 s
             )),
         }
@@ -56,6 +59,7 @@ impl std::fmt::Display for LlmBackend {
             Self::Ollama => write!(f, "ollama"),
             Self::OpenAiCompatible => write!(f, "openai_compatible"),
             Self::Tinfoil => write!(f, "tinfoil"),
+            Self::Gemini => write!(f, "gemini"),
         }
     }
 }
@@ -103,6 +107,13 @@ pub struct TinfoilConfig {
     pub model: String,
 }
 
+/// Configuration for direct Google Gemini API access.
+#[derive(Debug, Clone)]
+pub struct GeminiConfig {
+    pub api_key: SecretString,
+    pub model: String,
+}
+
 /// LLM provider configuration.
 ///
 /// NEAR AI remains the default backend. Users can switch to other providers
@@ -123,6 +134,8 @@ pub struct LlmConfig {
     pub openai_compatible: Option<OpenAiCompatibleConfig>,
     /// Tinfoil config (populated when backend=tinfoil)
     pub tinfoil: Option<TinfoilConfig>,
+    /// Direct Gemini config (populated when backend=gemini)
+    pub gemini: Option<GeminiConfig>,
 }
 
 /// NEAR AI configuration.
@@ -312,7 +325,6 @@ impl LlmConfig {
         } else {
             None
         };
-
         let tinfoil = if backend == LlmBackend::Tinfoil {
             let api_key = optional_env("TINFOIL_API_KEY")?
                 .map(SecretString::from)
@@ -326,6 +338,21 @@ impl LlmConfig {
             None
         };
 
+        let gemini = if backend == LlmBackend::Gemini {
+            let api_key = optional_env("GEMINI_API_KEY")?
+                .map(SecretString::from)
+                .ok_or_else(|| ConfigError::MissingRequired {
+                    key: "GEMINI_API_KEY".to_string(),
+                    hint: "Set GEMINI_API_KEY when LLM_BACKEND=gemini".to_string(),
+                })?;
+            let model = optional_env("GEMINI_MODEL")?
+                .or_else(|| settings.selected_model.clone())
+                .unwrap_or_else(|| "gemini-2.0-flash-exp".to_string());
+            Some(GeminiConfig { api_key, model })
+        } else {
+            None
+        };
+
         Ok(Self {
             backend,
             nearai,
@@ -334,6 +361,7 @@ impl LlmConfig {
             ollama,
             openai_compatible,
             tinfoil,
+            gemini,
         })
     }
 }
