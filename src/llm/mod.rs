@@ -495,6 +495,7 @@ mod tests {
             ollama: None,
             openai_compatible: None,
             tinfoil: None,
+            gemini: None,
         }
     }
 
