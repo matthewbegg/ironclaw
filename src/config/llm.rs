@@ -347,7 +347,7 @@ impl LlmConfig {
                 })?;
             let model = optional_env("GEMINI_MODEL")?
                 .or_else(|| settings.selected_model.clone())
-                .unwrap_or_else(|| "gemini-2.0-flash".to_string());
+                .unwrap_or_else(|| "gemini-3-flash-preview".to_string());
             Some(GeminiConfig { api_key, model })
         } else {
             None

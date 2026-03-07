@@ -179,6 +179,8 @@ pub struct ToolCall {
     pub id: String,
     pub name: String,
     pub arguments: serde_json::Value,
+    /// Optional thought signature required by Gemini 3 models for tool usage.
+    pub thought_signature: Option<String>,
 }
 
 /// Result of a tool execution to send back to the LLM.

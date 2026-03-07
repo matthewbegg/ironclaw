@@ -10,6 +10,7 @@
 pub mod circuit_breaker;
 pub mod costs;
 pub mod failover;
+mod gemini_rest;
 mod nearai_chat;
 mod provider;
 mod reasoning;
@@ -273,19 +274,23 @@ fn create_gemini_provider(config: &LlmConfig) -> Result<Arc<dyn LlmProvider>, Ll
 
     use rig::providers::gemini;
 
-    let client = gemini::Client::new(gem.api_key.expose_secret()).map_err(|e| {
-        LlmError::RequestFailed {
-            provider: "gemini".to_string(),
-            reason: format!("Failed to create Gemini client: {}", e),
-        }
-    })?;
-    let model = client.completion_model(&gem.model);
-
     tracing::info!(
         "Using Gemini direct API (model: {})",
         gem.model
     );
-    Ok(Arc::new(RigAdapter::new(model, &gem.model)))
+
+    if gem.model.contains("gemini-3") {
+        Ok(Arc::new(gemini_rest::GeminiRestProvider::new(gem.clone())))
+    } else {
+        let client = gemini::Client::new(gem.api_key.expose_secret()).map_err(|e| {
+            LlmError::RequestFailed {
+                provider: "gemini".to_string(),
+                reason: format!("Failed to create Gemini client: {}", e),
+            }
+        })?;
+        let model = client.completion_model(&gem.model);
+        Ok(Arc::new(RigAdapter::new(model, &gem.model)))
+    }
 }
 
 /// Create a cheap/fast LLM provider for lightweight tasks (heartbeat, routing, evaluation).

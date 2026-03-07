@@ -14,11 +14,12 @@ services:
       - XAI_API_KEY=${XAI_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - SECRETS_MASTER_KEY=${SECRETS_MASTER_KEY}
-      - LLM_BACKEND=gemini
-      - GEMINI_MODEL=gemini-2.0-flash
-      # - LLM_BACKEND=openai_compatible
-      # - LLM_BASE_URL=http://litellm:4000/v1
-      # - LLM_MODEL=grok-orchestrator
+      # - LLM_BACKEND=gemini
+      # - GEMINI_MODEL=gemini-3-flash-preview
+      - LLM_BACKEND=openai_compatible
+      - LLM_BASE_URL=https://api.x.ai/v1
+      - LLM_MODEL=grok-4-1-fast
+      - LLM_API_KEY=${XAI_API_KEY}
     command: ["run", "--config", "/app/config.toml", "--no-onboard"]
     depends_on:
       postgres:

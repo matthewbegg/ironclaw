@@ -3,7 +3,7 @@
 use std::sync::Arc;
 use clap::Subcommand;
 use crate::secrets::{SecretsStore, CreateSecretParams};
-use secrecy::SecretString;
+
 
 #[derive(Subcommand, Debug, Clone)]
 pub enum SecretCommand {

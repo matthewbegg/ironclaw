@@ -317,12 +317,20 @@ impl Agent {
                     }
                 };
 
-                thread.complete_turn(&response);
-                let tool_calls = thread
-                    .turns
-                    .last()
-                    .map(|t| t.tool_calls.clone())
-                    .unwrap_or_default();
+                if !response.is_empty() {
+                    thread.complete_turn(&response);
+                    let tool_calls = thread
+                        .turns
+                        .last()
+                        .map(|t| t.tool_calls.clone())
+                        .unwrap_or_default();
+                    // Persist tool calls then assistant response
+                    self.persist_tool_calls(thread_id, &message.user_id, &tool_calls)
+                        .await;
+                    self.persist_assistant_response(thread_id, &message.user_id, &response)
+                        .await;
+                }
+                
                 let _ = self
                     .channels
                     .send_status(
@@ -332,20 +340,10 @@ impl Agent {
                     )
                     .await;
 
-                // Persist tool calls then assistant response (user message already persisted at turn start)
-                self.persist_tool_calls(thread_id, &message.user_id, &tool_calls)
-                    .await;
-                self.persist_assistant_response(thread_id, &message.user_id, &response)
-                    .await;
-
                 Ok(SubmissionResult::response(response))
             }
             Ok(AgenticLoopResult::NeedApproval { pending }) => {
                 // Store pending approval in thread and update state
-                let request_id = pending.request_id;
-                let tool_name = pending.tool_name.clone();
-                let description = pending.description.clone();
-                let parameters = pending.parameters.clone();
                 thread.await_approval(pending);
                 let _ = self
                     .channels
@@ -355,12 +353,7 @@ impl Agent {
                         &message.metadata,
                     )
                     .await;
-                Ok(SubmissionResult::NeedApproval {
-                    request_id,
-                    tool_name,
-                    description,
-                    parameters,
-                })
+                Ok(SubmissionResult::ok_with_message(""))
             }
             Err(e) => {
                 thread.fail_turn(e.to_string());
@@ -799,10 +792,12 @@ impl Agent {
                     message,
                     &tool_result,
                     ext_name,
-                    instructions.clone(),
+                    instructions,
                 )
                 .await;
-                return Ok(SubmissionResult::response(instructions));
+                // Return empty string because handle_auth_intercept already sent
+                // the instructions via send_status(AuthRequired).
+                return Ok(SubmissionResult::ok_with_message(""));
             }
 
             // Add tool result to context
@@ -1063,9 +1058,10 @@ impl Agent {
                 context_messages.push(ChatMessage::tool_result(&tc.id, &tc.name, deferred_content));
             }
 
-            // Return auth response after all results are recorded
-            if let Some(instructions) = deferred_auth {
-                return Ok(SubmissionResult::response(instructions));
+            // Return empty response after all results are recorded if auth was deferred.
+            // handle_auth_intercept already handled status updates and persistence.
+            if deferred_auth.is_some() {
+                return Ok(SubmissionResult::response(""));
             }
 
             // Handle approval if a tool needed it
@@ -1209,7 +1205,7 @@ impl Agent {
     /// Enters auth mode on the thread, completes + persists the turn,
     /// and sends the AuthRequired status to the channel.
     /// Returns the instructions string for the caller to wrap in a response.
-    async fn handle_auth_intercept(
+    pub(super) async fn handle_auth_intercept(
         &self,
         session: &Arc<Mutex<Session>>,
         thread_id: Uuid,

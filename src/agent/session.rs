@@ -317,8 +317,40 @@ impl Thread {
         let mut messages = Vec::new();
         for turn in &self.turns {
             messages.push(ChatMessage::user(&turn.user_input));
+
+            if !turn.tool_calls.is_empty() {
+                let tool_calls: Vec<ToolCall> = turn
+                    .tool_calls
+                    .iter()
+                    .map(|tc| ToolCall {
+                        id: tc.id.clone(),
+                        name: tc.name.clone(),
+                        arguments: tc.parameters.clone(),
+                        thought_signature: tc.thought_signature.clone(),
+                    })
+                    .collect();
+
+                // Assistant message with tool calls
+                messages.push(ChatMessage::assistant_with_tool_calls(None, tool_calls));
+
+                // Tool result messages
+                for tc in &turn.tool_calls {
+                    if let Some(ref res) = tc.result {
+                        messages.push(ChatMessage::tool_result(&tc.id, &tc.name, res.to_string()));
+                    } else if let Some(ref err) = tc.error {
+                        messages.push(ChatMessage::tool_result(
+                            &tc.id,
+                            &tc.name,
+                            format!("Error: {}", err),
+                        ));
+                    }
+                }
+            }
+
             if let Some(ref response) = turn.response {
-                messages.push(ChatMessage::assistant(response));
+                if !response.is_empty() {
+                    messages.push(ChatMessage::assistant(response));
+                }
             }
         }
         messages
@@ -441,12 +473,20 @@ impl Turn {
     }
 
     /// Record a tool call.
-    pub fn record_tool_call(&mut self, name: impl Into<String>, params: serde_json::Value) {
+    pub fn record_tool_call(
+        &mut self,
+        id: impl Into<String>,
+        name: impl Into<String>,
+        params: serde_json::Value,
+        thought_signature: Option<String>,
+    ) {
         self.tool_calls.push(TurnToolCall {
+            id: id.into(),
             name: name.into(),
             parameters: params,
             result: None,
             error: None,
+            thought_signature,
         });
     }
 
@@ -468,6 +508,8 @@ impl Turn {
 /// Record of a tool call made during a turn.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TurnToolCall {
+    /// Unique ID for this tool call.
+    pub id: String,
     /// Tool name.
     pub name: String,
     /// Parameters passed to the tool.
@@ -476,6 +518,8 @@ pub struct TurnToolCall {
     pub result: Option<serde_json::Value>,
     /// Error from the tool (if failed).
     pub error: Option<String>,
+    /// Optional thought signature from Gemini 3.
+    pub thought_signature: Option<String>,
 }
 
 #[cfg(test)]
@@ -520,8 +564,8 @@ mod tests {
     #[test]
     fn test_turn_tool_calls() {
         let mut turn = Turn::new(0, "Test input");
-        turn.record_tool_call("echo", serde_json::json!({"message": "test"}));
-        turn.record_tool_result(serde_json::json!("test"));
+        turn.record_tool_call("tc_1", "echo", serde_json::json!({"message": "test"}), None);
+        turn.record_tool_result(serde_json::json!("test result"));
 
         assert_eq!(turn.tool_calls.len(), 1);
         assert!(turn.tool_calls[0].result.is_some());

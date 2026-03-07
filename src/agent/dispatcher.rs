@@ -324,7 +324,12 @@ impl Agent {
                             && let Some(turn) = thread.last_turn_mut()
                         {
                             for tc in &tool_calls {
-                                turn.record_tool_call(&tc.name, tc.arguments.clone());
+                                turn.record_tool_call(
+                                    &tc.id,
+                                    &tc.name,
+                                    tc.arguments.clone(),
+                                    tc.thought_signature.clone(),
+                                );
                             }
                         }
                     }
@@ -616,28 +621,17 @@ impl Agent {
                                 // until all results are recorded.
                                 if deferred_auth.is_none()
                                     && let Some((ext_name, instructions)) =
-                                        check_auth_required(&tc.name, &tool_result)
+                                        check_auth_required(&tc.id, &tool_result)
                                 {
-                                    let auth_data = parse_auth_result(&tool_result);
-                                    {
-                                        let mut sess = session.lock().await;
-                                        if let Some(thread) = sess.threads.get_mut(&thread_id) {
-                                            thread.enter_auth_mode(ext_name.clone());
-                                        }
-                                    }
-                                    let _ = self
-                                        .channels
-                                        .send_status(
-                                            &message.channel,
-                                            StatusUpdate::AuthRequired {
-                                                extension_name: ext_name,
-                                                instructions: Some(instructions.clone()),
-                                                auth_url: auth_data.auth_url,
-                                                setup_url: auth_data.setup_url,
-                                            },
-                                            &message.metadata,
-                                        )
-                                        .await;
+                                    self.handle_auth_intercept(
+                                        &session,
+                                        thread_id,
+                                        message,
+                                        &tool_result,
+                                        ext_name,
+                                        instructions.clone(),
+                                    )
+                                    .await;
                                     deferred_auth = Some(instructions);
                                 }
 
@@ -664,9 +658,10 @@ impl Agent {
                         }
                     }
 
-                    // Return auth response after all results are recorded
-                    if let Some(instructions) = deferred_auth {
-                        return Ok(AgenticLoopResult::Response(instructions));
+                    // Return empty response after all results are recorded if auth was deferred.
+                    // handle_auth_intercept already handled status updates and persistence.
+                    if deferred_auth.is_some() {
+                        return Ok(AgenticLoopResult::Response("".to_string()));
                     }
 
                     // Handle approval if a tool needed it
