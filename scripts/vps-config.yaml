@@ -21,7 +21,7 @@ llm:
   # Use Gemini directly
   # api_base: http://litellm:4000/v1
   # api_key: sk-ironclaw-master-key
-  default_model: gemini-2.0-flash-exp
+  default_model: gemini-2.0-flash
 
 database:
   connection_string: "postgres://ironclaw:ironclaw@host.docker.internal:5432/ironclaw"

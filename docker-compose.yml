@@ -15,7 +15,7 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - SECRETS_MASTER_KEY=${SECRETS_MASTER_KEY}
       - LLM_BACKEND=gemini
-      - GEMINI_MODEL=gemini-2.0-flash-exp
+      - GEMINI_MODEL=gemini-2.0-flash
       # - LLM_BACKEND=openai_compatible
       # - LLM_BASE_URL=http://litellm:4000/v1
       # - LLM_MODEL=grok-orchestrator
