@@ -67,11 +67,17 @@ impl exports::near::agent::tool::Guest for AtlasBrainTool {
                 },
                 "filter": {
                     "type": "object",
-                    "description": "Notion filter object"
+                    "description": "Notion filter object",
+                    "properties": {},
+                    "additionalProperties": true
                 },
                 "sorts": {
                     "type": "array",
-                    "items": { "type": "object" },
+                    "items": {
+                        "type": "object",
+                        "properties": {},
+                        "additionalProperties": true
+                    },
                     "description": "Notion sorts array"
                 },
                 "query": {

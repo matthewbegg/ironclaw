@@ -45,15 +45,23 @@ impl exports::near::agent::tool::Guest for AtlasNotionTool {
                 },
                 "properties": {
                     "type": "object",
-                    "description": "Notion properties (JSON objects) for create/update"
+                    "description": "Notion properties (JSON objects) for create/update",
+                    "properties": {},
+                    "additionalProperties": true
                 },
                 "filter": {
                     "type": "object",
-                    "description": "Notion filter object for query_database"
+                    "description": "Notion filter object for query_database",
+                    "properties": {},
+                    "additionalProperties": true
                 },
                 "sorts": {
                     "type": "array",
-                    "items": { "type": "object" },
+                    "items": {
+                        "type": "object",
+                        "properties": {},
+                        "additionalProperties": true
+                    },
                     "description": "Notion sorts array for query_database"
                 },
                 "query": {
