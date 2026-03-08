@@ -341,6 +341,7 @@ fn extract_response(
                     id: tc.id.clone(),
                     name: tc.function.name.clone(),
                     arguments: tc.function.arguments.clone(),
+                    thought_signature: None,
                 });
             }
             // Reasoning and Image variants are not mapped to IronClaw types

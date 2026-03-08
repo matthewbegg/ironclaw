@@ -511,7 +511,13 @@ Respond in JSON format:
                 let cleaned = clean_response(&content);
                 return Ok(RespondOutput {
                     result: RespondResult::ToolCalls {
-                        tool_calls: recovered,
+                        tool_calls: recovered
+                            .into_iter()
+                            .map(|mut tc| {
+                                tc.thought_signature = None;
+                                tc
+                            })
+                            .collect(),
                         content: if cleaned.is_empty() {
                             None
                         } else {
