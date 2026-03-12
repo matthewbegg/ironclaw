@@ -1,0 +1,5 @@
+{
+  "name": "google-workspace",
+  "command": "npx",
+  "args": ["-y", "@googleworkspace/cli", "mcp"]
+}
