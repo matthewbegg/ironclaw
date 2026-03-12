@@ -773,7 +773,7 @@ async fn refresh_oauth_token(
         return false;
     }
 
-    let refresh_name = format!("{}_refresh_token", config.secret_name);
+    let refresh_name = format!("{}_refresh", config.secret_name);
     let refresh_secret = match store.get_decrypted(user_id, &refresh_name).await {
         Ok(s) => s,
         Err(e) => {

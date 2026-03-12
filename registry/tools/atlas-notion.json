@@ -16,10 +16,13 @@
         "crate_name": "atlas-notion-tool"
     },
     "auth_summary": {
-        "method": "secret",
+        "method": "oauth",
+        "provider": "Notion",
         "secrets": [
             "notion_token"
-        ]
+        ],
+        "shared_auth": "notion_token",
+        "setup_url": "https://www.notion.so/my-integrations"
     },
     "tags": [
         "atlas",

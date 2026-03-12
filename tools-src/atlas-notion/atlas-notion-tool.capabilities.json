@@ -10,9 +10,8 @@
     "credentials": {
       "notion_token": {
         "secret_name": "notion_token",
-        "location": { "type": "header", "name": "Authorization" },
-        "host_patterns": ["api.notion.com"],
-        "template": "Bearer {{secret}}"
+        "location": { "type": "bearer" },
+        "host_patterns": ["api.notion.com"]
       }
     },
     "rate_limit": {
@@ -22,5 +21,21 @@
   },
   "secrets": {
     "allowed_names": ["notion_token"]
+  },
+  "auth": {
+    "secret_name": "notion_token",
+    "display_name": "Notion",
+    "oauth": {
+      "authorization_url": "https://api.notion.com/v1/oauth/authorize",
+      "token_url": "https://api.notion.com/v1/oauth/token",
+      "client_id_env": "NOTION_OAUTH_CLIENT_ID",
+      "client_secret_env": "NOTION_OAUTH_CLIENT_SECRET",
+      "scopes": [],
+      "use_pkce": false,
+      "extra_params": {
+        "owner": "user"
+      }
+    },
+    "env_var": "NOTION_TOKEN"
   }
 }
